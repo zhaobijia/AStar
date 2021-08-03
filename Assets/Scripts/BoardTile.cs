@@ -1,18 +1,26 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class BoardTile : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+
+    [SerializeField] Material tileMaterial;
+    //Astar
+    [SerializeField] TMP_Text totalCostText;
+    [SerializeField] TMP_Text hCostText;
+    [SerializeField] TMP_Text gCostText;
+
+    public void SetColor(Color color)
     {
-        
+        tileMaterial.SetColor("_Color",color);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void SetAStarText(int hcost, int gcost, int totalcost)
     {
-        
+        hCostText.text = hcost.ToString();
+        gCostText.text = gcost.ToString();
+        totalCostText.text = totalcost.ToString();
     }
 }
