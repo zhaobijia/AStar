@@ -8,7 +8,7 @@ public class Grid
     
     int height;
     int width;
-    Node[,] gridMatrix;//[row,col]
+    Node[,] gridMatrix;//[col.row]
 
     
 
@@ -16,13 +16,13 @@ public class Grid
     {
         this.width = 10;
         this.height = 10;
-        this.gridMatrix = new Node[height, width];       
+        this.gridMatrix = new Node[ width, height];       
     }
     public Grid(int width, int height)
     {
         this.width = width;
-        this.height = 10;
-        this.gridMatrix = new Node[height, width];
+        this.height = height;
+        this.gridMatrix = new Node[width, height];
     }
 
     public void InitializeGrid()
@@ -32,10 +32,21 @@ public class Grid
             for (int c = 0; c < width; c++)
             {
                 Node node = new Node();
-                gridMatrix[r, c] = node;
-                node.pos = new Vector2Int(r, c);
+                gridMatrix[c, r] = node;
+                node.pos = new Vector2Int( c,r);
             }
         }
+    }
+
+    public void SetStartNode(int c, int r)
+    {
+        
+        gridMatrix[c,r].SetStart();
+    }
+
+    public void SetDestinationNode(int c, int r)
+    {
+        gridMatrix[c,r].SetDestination();
     }
 
    
@@ -44,13 +55,13 @@ public class Grid
 
     bool IsDestination(int r, int c)
     {
-        return gridMatrix[r, c].isDest;
+        return gridMatrix[c,r].isDest;
     }
 
     List<Node> GetPath(Dictionary<Node, Node> came_from, Node start, Node end)
     {
         List<Node> path = new List<Node>();
-        path.Add(end);
+       // path.Add(end);
         Node next = came_from[end];
         
         while (next != start)
@@ -58,117 +69,146 @@ public class Grid
             path.Add(next);
             next = came_from[next];
         }
-        path.Add(start);
+       // path.Add(start);
         path.Reverse(); // from start to end
         return path;
     }
 
-    public void BFS(int r, int c)
+    public List<Node> BFS(int r, int c)
     {
         Queue<Node> q = new Queue<Node>();
         Dictionary<Node,Node> came_from = new Dictionary<Node, Node>();
 
-        Node start = gridMatrix[r, c];
+        Node start = gridMatrix[c,r];
+        
+
         q.Enqueue(start);
         int dist = 0;
         while (q.Count > 0)
         {
+            
             Node node = q.Dequeue();
-            if (node.isDest) break; //early exit
+            Debug.Log("inside grid node:" + node.pos);
+            r = node.pos.y;
+            c = node.pos.x;
+
+            if (node.isDest)
+            {
+                return GetPath(came_from, start, node);
+                
+                //early exit
+            }
             //push 4 direction on to the queue
             //up
+            
             dist++;
-            if (r - 1 > 0 && !came_from.ContainsKey(gridMatrix[r - 1, c]))
+            if (r - 1 >= 0 && !came_from.ContainsKey(gridMatrix[c, r - 1]))
             {
-                gridMatrix[r - 1, c].totalcost = dist;
-                q.Enqueue(gridMatrix[r - 1, c]);
-                came_from[gridMatrix[r - 1, c]] = node;
+                gridMatrix[c, r - 1].totalcost = dist;
+                q.Enqueue(gridMatrix[c, r - 1]);
+                came_from[gridMatrix[c, r - 1]] = node;
                 
             }
             //down
-            if (r + 1 < height && !came_from.ContainsKey(gridMatrix[r + 1, c]))
+            if (r + 1 < height && !came_from.ContainsKey(gridMatrix[c , r + 1]))
             {
-                gridMatrix[r + 1, c].totalcost = dist;
-                q.Enqueue(gridMatrix[r + 1, c]);
-                came_from[gridMatrix[r + 1, c]] = node;
+                gridMatrix[c , r + 1].totalcost = dist;
+                q.Enqueue(gridMatrix[c , r + 1]);
+                came_from[gridMatrix[c , r + 1]] = node;
             }
             //left
-            if (c - 1 > 0 && !came_from.ContainsKey(gridMatrix[r, c - 1]))
+            if (c - 1 >= 0 && !came_from.ContainsKey(gridMatrix[ c - 1, r]))
             {
-                gridMatrix[r, c - 1].totalcost = dist;
-                q.Enqueue(gridMatrix[r, c - 1]);
-                came_from[gridMatrix[r, c - 1]] = node;
+                gridMatrix[ c - 1, r].totalcost = dist;
+                q.Enqueue(gridMatrix[ c - 1, r]);
+                came_from[gridMatrix[ c - 1, r]] = node;
             }
             //right
-            if (c + 1 < width && !came_from.ContainsKey(gridMatrix[r, c - 1]))
+            if (c + 1 < width && !came_from.ContainsKey(gridMatrix[ c + 1, r]))
             {
-                gridMatrix[r, c + 1].totalcost = dist;
-                q.Enqueue(gridMatrix[r, c + 1]);
-                came_from[gridMatrix[r, c + 1]] = node;
+                gridMatrix[ c + 1, r].totalcost = dist;
+                q.Enqueue(gridMatrix[ c + 1, r]);
+                came_from[gridMatrix[ c + 1, r]] = node;
             }
+            
 
         }
+        return new List<Node>();
+
+
+
 
     }
 
     //apply when node has a non unifrom cost distribution
     //Priority Queue from https://github.com/BlueRaja/High-Speed-Priority-Queue-for-C-Sharp
-    public void Dijkstra(int r, int c)
+    public List<Node> Dijkstra(int r, int c)
     {
         //based on gcost that should be assigned with node
 
         SimplePriorityQueue<Node> q = new SimplePriorityQueue<Node>();
-       // Queue<Node> q = new Queue<Node>();
+        
+        // Queue<Node> q = new Queue<Node>();
         Dictionary<Node, Node> came_from = new Dictionary<Node, Node>();
+
         Dictionary<Node, int> cost_so_far = new Dictionary<Node, int>();
 
 
-        Node start = gridMatrix[r, c];
+        Node start = gridMatrix[c,r];
         q.Enqueue(start,0);
-       
+        cost_so_far[start] = 0; 
         while (q.Count > 0)
         {
             Node node = q.Dequeue();
-            if (node.isDest) break; //early exit
+            r = node.pos.y;
+            c = node.pos.x;
+
+            if (node.isDest)
+            {
+                return GetPath(came_from, start, node);
+
+                //early exit
+            }
+
             //push 4 direction on to the queue
             //up
-            
-            if (r - 1 > 0 )
+
+            if (r - 1 >= 0 )
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r - 1, c].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r - 1, c]) || new_cost<cost_so_far[gridMatrix[r - 1, c]])
+                int new_cost = cost_so_far[node] + gridMatrix[c, r - 1].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[c, r - 1]) || new_cost<cost_so_far[gridMatrix[c, r - 1]])
                 {
                     
-                    q.Enqueue(gridMatrix[r - 1, c],new_cost);
-                    came_from[gridMatrix[r - 1, c]] = node;
-                    cost_so_far[gridMatrix[r - 1, c]] = new_cost;
+                    q.Enqueue(gridMatrix[c, r - 1],new_cost);
+                    came_from[gridMatrix[c, r - 1]] = node;
+                    cost_so_far[gridMatrix[c, r - 1]] = new_cost;
                 }
 
             }
             //down
             if (r + 1 < height)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r + 1, c].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r + -1, c]) || new_cost < cost_so_far[gridMatrix[r + 1, c]])
+                int new_cost = cost_so_far[node] + gridMatrix[c, r + 1].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[c, r + 1]) || new_cost < cost_so_far[gridMatrix[c, r + 1]])
                 {
                     
-                    q.Enqueue(gridMatrix[r + 1, c], new_cost);
-                    came_from[gridMatrix[r + 1, c]] = node;
-                    cost_so_far[gridMatrix[r + 1, c]] = new_cost;
+                    q.Enqueue(gridMatrix[c, r + 1], new_cost);
+                    came_from[gridMatrix[c, r + 1]] = node;
+                    cost_so_far[gridMatrix[c, r + 1]] = new_cost;
                 }
             }
 
          
             //left
-            if (c - 1 > 0)
+            if (c - 1 >= 0)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r, c - 1].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r, c - 1]) || new_cost < cost_so_far[gridMatrix[r, c - 1]])
+                int new_cost = cost_so_far[node] + gridMatrix[ c - 1 , r].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[ c - 1, r]) || new_cost < cost_so_far[gridMatrix[ c - 1 , r]])
                 {
                     
-                    q.Enqueue(gridMatrix[r, c - 1], new_cost);
-                    came_from[gridMatrix[r, c - 1]] = node;
-                    cost_so_far[gridMatrix[r, c - 1]] = new_cost;
+                    q.Enqueue(gridMatrix[ c - 1 , r], new_cost);
+                    came_from[gridMatrix[ c - 1 , r]] = node;
+                    cost_so_far[gridMatrix[ c - 1 , r]] = new_cost;
                 }
 
             }
@@ -176,19 +216,22 @@ public class Grid
             //right
             if (c + 1 < width)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r, c + 1].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r, c - 1]) || new_cost < cost_so_far[gridMatrix[r, c + 1]])
+                int new_cost = cost_so_far[node] + gridMatrix[ c + 1, r].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[ c + 1, r]) || new_cost < cost_so_far[gridMatrix[ c + 1, r]])
                 {
                     
-                    q.Enqueue(gridMatrix[r, c + 1], new_cost);
-                    came_from[gridMatrix[r, c + 1]] = node;
-                    cost_so_far[gridMatrix[r, c + 1]] = new_cost;
+                    q.Enqueue(gridMatrix[ c + 1, r], new_cost);
+                    came_from[gridMatrix[ c + 1, r]] = node;
+                    cost_so_far[gridMatrix[ c + 1, r]] = new_cost;
                 }
 
             }
             
 
         }
+
+
+        return new List<Node>();
     }
 
     //no diagonal move
@@ -199,114 +242,135 @@ public class Grid
         return h;
     }
     //greedy best first search
-    public void Greedy(int r, int c, Node end)
+    public List<Node> Greedy(int r, int c, int dr, int dc)
     {
         SimplePriorityQueue<Node> q = new SimplePriorityQueue<Node>();
         // Queue<Node> q = new Queue<Node>();
         Dictionary<Node, Node> came_from = new Dictionary<Node, Node>();
 
-        Node start = gridMatrix[r, c];
+        Node start = gridMatrix[ c, r];
+        Node end = gridMatrix[dc, dr];
         int start_h = heuristic(start, end);
         q.Enqueue(start, start_h);
-
+        
         while (q.Count > 0)
         {
             Node node = q.Dequeue();
-            if (node.isDest) break; //early exit
-                                    //push 4 direction on to the queue
-                                    //up
-            if (r - 1 > 0 && !came_from.ContainsKey(gridMatrix[r - 1, c]))
+            r = node.pos.y;
+            c = node.pos.x;
+
+            if (node.isDest)
             {
-                int new_h = heuristic(gridMatrix[r - 1, c], end);
-                q.Enqueue(gridMatrix[r - 1, c], new_h);
-                came_from[gridMatrix[r - 1, c]] = node;
+                return GetPath(came_from, start, node);
+
+                //early exit
+            }
+            //push 4 direction on to the queue
+            //up
+            if (r - 1 >= 0 && !came_from.ContainsKey(gridMatrix[ c, r - 1]))
+            {
+                int new_h = heuristic(gridMatrix[ c, r - 1], end);
+                q.Enqueue(gridMatrix[ c, r - 1], new_h);
+                came_from[gridMatrix[ c, r - 1]] = node;
 
             }
             //down
-            if (r + 1 <height && !came_from.ContainsKey(gridMatrix[r + 1, c]))
+            if (r + 1 <height && !came_from.ContainsKey(gridMatrix[c, r + 1]))
             {
-                int new_h = heuristic(gridMatrix[r + 1, c], end);
-                q.Enqueue(gridMatrix[r + 1, c], new_h);
-                came_from[gridMatrix[r + 1, c]] = node;
+                int new_h = heuristic(gridMatrix[c, r + 1], end);
+                q.Enqueue(gridMatrix[c, r + 1], new_h);
+                came_from[gridMatrix[c, r + 1]] = node;
 
             }
 
             //left
-            if (c - 1 > 0 && !came_from.ContainsKey(gridMatrix[r, c - 1]))
+            if (c - 1 >= 0 && !came_from.ContainsKey(gridMatrix[ c - 1, r]))
             {
-                int new_h = heuristic(gridMatrix[r, c - 1], end);
-                q.Enqueue(gridMatrix[r, c - 1], new_h);
-                came_from[gridMatrix[r, c - 1]] = node;
+                int new_h = heuristic(gridMatrix[ c - 1, r], end);
+                q.Enqueue(gridMatrix[ c - 1, r], new_h);
+                came_from[gridMatrix[ c - 1, r]] = node;
 
             }
             
 
             //right
-            if (c + 1 < width && !came_from.ContainsKey(gridMatrix[r, c + 1]))
+            if (c + 1 < width && !came_from.ContainsKey(gridMatrix[ c + 1, r]))
             {
-                int new_h = heuristic(gridMatrix[r, c + 1], end);
-                q.Enqueue(gridMatrix[r, c + 1], new_h);
-                came_from[gridMatrix[r, c + 1]] = node;
+                int new_h = heuristic(gridMatrix[ c + 1, r], end);
+                q.Enqueue(gridMatrix[ c + 1, r], new_h);
+                came_from[gridMatrix[ c + 1, r]] = node;
 
             }
 
         }
+
+
+        return new List<Node>();
     }
-    public void AStar(int r, int c, Node end)
+    public List<Node> AStar(int r, int c, int dr, int dc)
     {
         SimplePriorityQueue<Node> q = new SimplePriorityQueue<Node>();
         Dictionary<Node, Node> came_from = new Dictionary<Node, Node>();
         Dictionary<Node, int> cost_so_far = new Dictionary<Node, int>();
 
 
-        Node start = gridMatrix[r, c];
+        Node start = gridMatrix[ c, r];
+        Node end = gridMatrix[dc, dr];
+
         int start_h = heuristic(start, end);
         start.SetHcost(start_h);
         q.Enqueue(start, start_h+0);
-
+        cost_so_far[start] = start_h;
         while (q.Count > 0)
         {
             Node node = q.Dequeue();
-            if (node.isDest) break; //early exit
-                                    //push 4 direction on to the queue
-                                    //up
-
-            if (r - 1 > 0)
+            r = node.pos.y;
+            c = node.pos.x;
+            if (node.isDest)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r - 1, c].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r - 1, c]) || new_cost < cost_so_far[gridMatrix[r - 1, c]])
+                return GetPath(came_from, start, node);
+
+                //early exit
+            }
+            //push 4 direction on to the queue
+            //up
+
+            if (r - 1 >= 0)
+            {
+                int new_cost = cost_so_far[node] + gridMatrix[ c, r -1 ].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[ c, r -1 ]) || new_cost < cost_so_far[gridMatrix[ c, r -1 ]])
                 {
-                    int totalcost = new_cost + heuristic(gridMatrix[r - 1, c], end);
-                    q.Enqueue(gridMatrix[r - 1, c], totalcost);
-                    came_from[gridMatrix[r - 1, c]] = node;
-                    cost_so_far[gridMatrix[r - 1, c]] = new_cost;
+                    int totalcost = new_cost + heuristic(gridMatrix[ c, r -1 ], end);
+                    q.Enqueue(gridMatrix[ c, r -1 ], totalcost);
+                    came_from[gridMatrix[ c, r -1 ]] = node;
+                    cost_so_far[gridMatrix[ c, r -1 ]] = new_cost;
                 }
 
             }
             //down
             if (r + 1 < height)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r + 1, c].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r + -1, c]) || new_cost < cost_so_far[gridMatrix[r + 1, c]])
+                int new_cost = cost_so_far[node] + gridMatrix[ c, r + 1].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[c, r + 1]) || new_cost < cost_so_far[gridMatrix[ c, r + 1]])
                 {
-                    int totalcost = new_cost + heuristic(gridMatrix[r + 1, c], end);
-                    q.Enqueue(gridMatrix[r + 1, c], totalcost);
-                    came_from[gridMatrix[r + 1, c]] = node;
-                    cost_so_far[gridMatrix[r + 1, c]] = new_cost;
+                    int totalcost = new_cost + heuristic(gridMatrix[ c, r + 1], end);
+                    q.Enqueue(gridMatrix[ c, r + 1], totalcost);
+                    came_from[gridMatrix[ c, r + 1]] = node;
+                    cost_so_far[gridMatrix[ c, r + 1]] = new_cost;
                 }
             }
 
 
             //left
-            if (c - 1 > 0)
+            if (c - 1 >= 0)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r, c - 1].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r, c - 1]) || new_cost < cost_so_far[gridMatrix[r, c - 1]])
+                int new_cost = cost_so_far[node] + gridMatrix[ c - 1, r ].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[ c - 1, r ]) || new_cost < cost_so_far[gridMatrix[ c - 1, r ]])
                 {
-                    int totalcost = new_cost + heuristic(gridMatrix[r, c - 1], end);
-                    q.Enqueue(gridMatrix[r, c - 1], totalcost);
-                    came_from[gridMatrix[r, c - 1]] = node;
-                    cost_so_far[gridMatrix[r, c - 1]] = new_cost;
+                    int totalcost = new_cost + heuristic(gridMatrix[ c - 1, r ], end);
+                    q.Enqueue(gridMatrix[ c - 1, r ], totalcost);
+                    came_from[gridMatrix[ c - 1, r ]] = node;
+                    cost_so_far[gridMatrix[ c - 1, r ]] = new_cost;
                 }
 
             }
@@ -314,19 +378,22 @@ public class Grid
             //right
             if (c + 1 < width)
             {
-                int new_cost = cost_so_far[node] + gridMatrix[r, c + 1].gcost;
-                if (!cost_so_far.ContainsKey(gridMatrix[r, c - 1]) || new_cost < cost_so_far[gridMatrix[r, c + 1]])
+                int new_cost = cost_so_far[node] + gridMatrix[ c + 1, r ].gcost;
+                if (!cost_so_far.ContainsKey(gridMatrix[ c + 1, r ]) || new_cost < cost_so_far[gridMatrix[ c + 1, r ]])
                 {
-                    int totalcost = new_cost + heuristic(gridMatrix[r, c + 1], end);
-                    q.Enqueue(gridMatrix[r, c + 1], totalcost);
-                    came_from[gridMatrix[r, c + 1]] = node;
-                    cost_so_far[gridMatrix[r, c + 1]] = new_cost;
+                    int totalcost = new_cost + heuristic(gridMatrix[ c + 1, r ], end);
+                    q.Enqueue(gridMatrix[ c + 1, r ], totalcost);
+                    came_from[gridMatrix[ c + 1, r ]] = node;
+                    cost_so_far[gridMatrix[ c + 1, r ]] = new_cost;
                 }
 
             }
 
 
         }
+
+
+        return new List<Node>();
     }
     
     #endregion

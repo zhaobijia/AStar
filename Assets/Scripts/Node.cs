@@ -63,13 +63,13 @@ public class Node
         this.totalcost = this.hcost + this.gcost;
     }
 
-    public void SetStartNode()
+    public void SetStart()
     {
         this.isStart = true;
         this.isDest = false;
     }
 
-    public void SetDestinationNode()
+    public void SetDestination()
     {
         this.isStart = false;
         this.isDest = true;
